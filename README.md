@@ -227,10 +227,10 @@ proofloop ai/
 
 ### Windows
 
-The repository path may contain spaces. Quote it when changing directories:
+Run the following from the repository root. If your path contains spaces, quote it:
 
 ```powershell
-cd "C:\Users\rishi\OneDrive\Desktop\proofloop ai"
+cd "<path-to-your-cloned-repository>"
 py -3.12 -m venv .venv
 .venv\Scripts\python -m pip install -r requirements.lock
 .venv\Scripts\python -m uvicorn proofloop.main:app --reload --host 127.0.0.1 --port 8000
@@ -247,7 +247,7 @@ If `8000` is already in use, choose another port:
 ### macOS and Linux
 
 ```bash
-cd "/path/to/proofloop ai"
+cd "/path/to/your-cloned-repository"
 python3.12 -m venv .venv
 .venv/bin/python -m pip install -r requirements.lock
 .venv/bin/python -m uvicorn proofloop.main:app --reload --host 127.0.0.1 --port 8000
@@ -596,10 +596,21 @@ SQLite foreign keys are enabled. The database directory is created automatically
 
 ## Testing and quality
 
-Run the supported test command from the project virtual environment:
+Run tests from the repository root:
 
-```powershell
-.venv\Scripts\python -m pytest -q
+```bash
+python -m pytest -q
+```
+
+If `pytest` is not installed yet, install the development dependencies first:
+
+```bash
+python -m pip install -r requirements.lock
+```
+
+Then run:
+
+```bash
 git diff --check
 ```
 
@@ -689,11 +700,11 @@ For a platform such as Render or Railway, configure the platform-provided `PORT`
 
 ### `ModuleNotFoundError: No module named 'sqlalchemy'`
 
-The global Python interpreter is being used. Install and run through the project virtual environment:
+The current Python environment is missing dependencies. From the repository root, install dependencies and rerun tests:
 
-```powershell
-.venv\Scripts\python -m pip install -r requirements.lock
-.venv\Scripts\python -m pytest -q
+```bash
+python -m pip install -r requirements.lock
+python -m pytest -q
 ```
 
 ### Port 8000 is already in use
@@ -755,15 +766,15 @@ Contributions are welcome, especially in the areas that improve evidence transpa
 ### Development setup
 
 ```powershell
-cd "C:\Users\rishi\OneDrive\Desktop\proofloop ai"
+cd "<path-to-your-cloned-repository>"
 py -3.12 -m venv .venv
 .venv\Scripts\python -m pip install -r requirements.lock
 ```
 
 ### Before opening a pull request
 
-```powershell
-.venv\Scripts\python -m pytest -q
+```bash
+python -m pytest -q
 git diff --check
 ```
 
