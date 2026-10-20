@@ -20,8 +20,8 @@ ProofLoop AI is an open-source, evidence-first reliability workbench for AI-gene
 
 ```bash
 python -m venv .venv
-# Windows: .venv\Scripts\python -m pip install -r requirements.txt
-# Linux/macOS: .venv/bin/python -m pip install -r requirements.txt
+# Windows: .venv\Scripts\python -m pip install -r requirements.lock
+# Linux/macOS: .venv/bin/python -m pip install -r requirements.lock
 python -m uvicorn proofloop.main:app --reload
 ```
 
