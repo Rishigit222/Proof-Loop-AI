@@ -44,6 +44,8 @@ def test_api_validation_and_missing_case(client):
     assert client.post("/api/cases", json={"title": "", "answer": "", "sources": []}).status_code == 422
     assert client.get("/api/cases/does-not-exist").status_code == 404
     assert client.post("/api/cases/does-not-exist/decision", json={"decision": "APPROVED"}).status_code == 404
+    assert client.post("/api/cases", json={"title": " ", "answer": "Valid answer.", "sources": [{"name": "Spec", "content": "Evidence."}]}).status_code == 422
+    assert client.patch("/api/claims/does-not-exist", json={"text": " "}).status_code == 422
 
 
 def test_demo_scenarios_have_distinct_real_outcomes(client):
@@ -55,3 +57,25 @@ def test_demo_scenarios_have_distinct_real_outcomes(client):
         result = case["latest_run"]["results"]["results"][0]
         outcomes[scenario] = result["status"]
     assert outcomes == {"supported": "supported", "unsupported": "unsupported", "contradicted": "contradicted"}
+
+
+def test_decision_rejected_until_current_revision_is_reverified(client):
+    created = client.post("/api/cases", json=payload()).json()
+    case_id = created["id"]
+    verified = client.post(f"/api/cases/{case_id}/verify").json()
+    claim_id = verified["claims"][0]["id"]
+    revised = client.post(f"/api/cases/{case_id}/repairs/apply", json=[{"claim_id": claim_id, "action": "REMOVE"}])
+    assert revised.status_code == 200
+    stale_decision = client.post(f"/api/cases/{case_id}/decision", json={"decision": "APPROVED"})
+    assert stale_decision.status_code == 409
+    fresh = client.post(f"/api/cases/{case_id}/verify")
+    assert fresh.status_code == 200
+    assert client.post(f"/api/cases/{case_id}/decision", json={"decision": "REJECTED", "comment": "Fresh run reviewed."}).status_code == 200
+
+
+def test_noop_or_incomplete_repairs_are_rejected(client):
+    created = client.post("/api/cases", json=payload()).json()
+    case_id = created["id"]
+    claim_id = created["claims"][0]["id"]
+    assert client.post(f"/api/cases/{case_id}/repairs/apply", json=[{"claim_id": claim_id, "action": "MANUAL_REVIEW"}]).status_code == 409
+    assert client.post(f"/api/cases/{case_id}/repairs/apply", json=[{"claim_id": claim_id, "action": "REWRITE"}]).status_code == 422

@@ -80,6 +80,13 @@ def latest_run(db: Session, case_id: str) -> VerificationRun | None:
     return db.scalar(select(VerificationRun).where(VerificationRun.case_id == case_id).order_by(VerificationRun.created_at.desc()))
 
 
+def run_matches_current_state(case: Case, run: VerificationRun) -> bool:
+    """Prevent approval of a run produced before claims or answer changed."""
+    snapshot = json.loads(run.input_snapshot)
+    current_claims = [{"text": claim.text, "start": claim.start_offset, "end": claim.end_offset, "source_id": claim.id} for claim in case.claims if claim.is_active]
+    return snapshot.get("answer") == case.current_answer and snapshot.get("claims") == current_claims
+
+
 def serialize_case(db: Session, case: Case) -> dict:
     run = latest_run(db, case.id)
     revisions = sorted(case.revisions, key=lambda item: item.created_at, reverse=True)

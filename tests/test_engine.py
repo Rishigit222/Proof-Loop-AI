@@ -141,6 +141,24 @@ class VerificationTests(unittest.TestCase):
         })
         self.assertTrue(all(proposal.action and proposal.rationale for proposal in proposals))
 
+    def test_unrelated_negation_does_not_become_false_contradiction(self):
+        report = self.engine.verify(["The server is online."], [Source("status", "The server is online, but not stable.")])
+        self.assertEqual(report.results[0].status, VerificationStatus.NEEDS_REVIEW.value)
+
+    def test_maybe_and_no_evidence_are_not_support(self):
+        for source_text in ("Maybe the launch is successful.", "There is no evidence the launch is successful."):
+            report = self.engine.verify(["The launch is successful."], [Source("brief", source_text)])
+            self.assertNotEqual(report.results[0].status, VerificationStatus.SUPPORTED.value)
+
+    def test_list_markers_do_not_become_claims(self):
+        claims = extract_candidate_claims("1. Alice is a researcher.\n2. Bob works remotely.")
+        self.assertEqual([claim.text for claim in claims], ["Alice is a researcher.", "Bob works remotely."])
+
+    def test_invalid_candidate_offsets_are_malformed(self):
+        report = self.engine.verify([CandidateClaim("The sky is blue.", -3, 4)], [Source("s", "The sky is blue.")])
+        self.assertEqual(report.metrics["malformed_claims"], 1)
+        self.assertEqual(report.results, ())
+
 
 if __name__ == "__main__":
     unittest.main()

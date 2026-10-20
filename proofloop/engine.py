@@ -305,10 +305,6 @@ _NEGATION_WORDS = {
     "won't",
     "wouldn't",
     "shouldn't",
-    "false",
-    "untrue",
-    "incorrect",
-    "impossible",
 }
 _PARTIAL_MATCH_STOPWORDS = {
     "a",
@@ -341,9 +337,9 @@ _PARTIAL_MATCH_STOPWORDS = {
     "with",
 }
 _HEDGE_RE = re.compile(
-    r"\b(?:may|might|could|possibly|probably|likely|uncertain|unclear|"
-    r"unconfirmed|alleged|appears?|seems?|suggests?|reportedly)\b|"
-    r"\bnot\s+(?:confirmed|verified|known|clear)\b",
+    r"\b(?:may|might|could|maybe|perhaps|possibly|probably|likely|uncertain|unclear|"
+    r"unconfirmed|alleged|appears?|seems?|suggests?|reportedly|believed|estimated|rumored)\b|"
+    r"\b(?:no\s+evidence|not\s+(?:confirmed|verified|known|clear))\b",
     re.IGNORECASE,
 )
 
@@ -405,7 +401,7 @@ def extract_candidate_claims(text: Any, source_id: Optional[str] = None) -> Tupl
     candidates: list[CandidateClaim] = []
     for match in _SEGMENT_RE.finditer(text):
         candidate_text, start, end = _trim_candidate(text, match.start(), match.end())
-        if not candidate_text or not _tokens(candidate_text):
+        if not candidate_text or not _tokens(candidate_text) or re.fullmatch(r"\d+[.)]", candidate_text.strip()):
             continue
         candidates.append(CandidateClaim(candidate_text, start, end, source_id))
     return tuple(candidates)
@@ -413,7 +409,7 @@ def extract_candidate_claims(text: Any, source_id: Optional[str] = None) -> Tupl
 
 def _coerce_claim(value: Any) -> Optional[CandidateClaim]:
     if isinstance(value, CandidateClaim):
-        if isinstance(value.text, str) and value.text.strip():
+        if isinstance(value.text, str) and value.text.strip() and value.start >= 0 and value.end >= value.start:
             return value
         return None
     if isinstance(value, str) and value.strip():
@@ -456,7 +452,7 @@ def _coerce_source(value: Any, index: int) -> Optional[Source]:
 def _source_segments(source: Source) -> Iterable[tuple[str, int, int]]:
     for match in _SEGMENT_RE.finditer(source.text):
         text, start, end = _trim_candidate(source.text, match.start(), match.end())
-        if text and _tokens(text):
+        if text and _tokens(text) and not re.fullmatch(r"\d+[.)]", text.strip()):
             yield text, start, end
 
 
@@ -495,6 +491,10 @@ def _evidence_for_claim(claim: CandidateClaim, source: Source) -> list[Evidence]
         if hedged:
             relation = VerificationStatus.NEEDS_REVIEW.value
             reason = "The source contains a hedge or uncertainty marker."
+            score = 0.5
+        elif direct and source_negative != claim_negative:
+            relation = VerificationStatus.NEEDS_REVIEW.value
+            reason = "The source contains a direct match alongside a separate polarity marker; scope is ambiguous."
             score = 0.5
         elif polarity_match and source_negative != claim_negative:
             relation = VerificationStatus.CONTRADICTED.value

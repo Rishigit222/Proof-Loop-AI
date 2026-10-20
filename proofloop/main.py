@@ -12,7 +12,7 @@ from .db import get_db, init_db
 from .fixtures import DEMO_SCENARIOS
 from .models import Case, Claim, HumanDecision, Revision
 from .schemas import CaseCreate, ClaimUpdate, DecisionInput, RepairApply
-from .services import add_event, create_case, dashboard_stats, extract_claims, latest_run, run_verification, serialize_case
+from .services import add_event, create_case, dashboard_stats, extract_claims, latest_run, run_matches_current_state, run_verification, serialize_case
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 app = FastAPI(title="ProofLoop AI", version=__version__, description="Evidence-first verification for AI-generated decisions.")
@@ -108,6 +108,8 @@ def apply_repairs(case_id: str, payload: list[RepairApply], db: Session = Depend
             current = current.replace(claim.text, "").replace("  ", " ").strip()
         elif item.action in {"REWRITE", "QUALIFY"} and item.replacement_text:
             current = current.replace(claim.text, item.replacement_text)
+    if current == case.current_answer:
+        raise HTTPException(status_code=409, detail="The selected repair would not change the current answer")
     revision = Revision(case_id=case.id, answer_text=current, revision_reason="Evidence-grounded repair selection")
     db.add(revision)
     db.flush()
@@ -124,6 +126,8 @@ def record_decision(case_id: str, payload: DecisionInput, db: Session = Depends(
     run = latest_run(db, case.id)
     if not run:
         raise HTTPException(status_code=409, detail="Run verification before recording a decision")
+    if not run_matches_current_state(case, run):
+        raise HTTPException(status_code=409, detail="Re-run verification after changing the answer or claims before recording a decision")
     decision = HumanDecision(case_id=case.id, verification_run_id=run.id, decision=payload.decision, comment=payload.comment)
     db.add(decision)
     case.decision_status = payload.decision.lower()
