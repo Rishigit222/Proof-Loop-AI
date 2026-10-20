@@ -12,7 +12,7 @@ from .db import get_db, init_db
 from .fixtures import DEMO_SCENARIOS
 from .models import Case, Claim, HumanDecision, Revision
 from .schemas import CaseCreate, ClaimUpdate, DecisionInput, RepairApply
-from .services import add_event, create_case, extract_claims, latest_run, run_verification, serialize_case
+from .services import add_event, create_case, dashboard_stats, extract_claims, latest_run, run_verification, serialize_case
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 app = FastAPI(title="ProofLoop AI", version=__version__, description="Evidence-first verification for AI-generated decisions.")
@@ -40,7 +40,7 @@ def health() -> dict:
 @app.get("/", response_class=HTMLResponse)
 def dashboard(request: Request, db: Session = Depends(get_db)):
     cases = db.scalars(select(Case).order_by(Case.updated_at.desc())).all()
-    return templates.TemplateResponse("dashboard.html", {"request": request, "cases": [serialize_case(db, case) for case in cases], "scenarios": DEMO_SCENARIOS})
+    return templates.TemplateResponse("dashboard.html", {"request": request, "cases": [serialize_case(db, case) for case in cases], "stats": dashboard_stats(db, cases), "scenarios": DEMO_SCENARIOS})
 
 
 @app.get("/cases/{case_id}", response_class=HTMLResponse)
@@ -51,7 +51,8 @@ def case_page(request: Request, case_id: str, db: Session = Depends(get_db)):
 
 @app.get("/api/cases")
 def list_cases(db: Session = Depends(get_db)):
-    return {"cases": [serialize_case(db, case) for case in db.scalars(select(Case).order_by(Case.updated_at.desc())).all()]}
+    cases = db.scalars(select(Case).order_by(Case.updated_at.desc())).all()
+    return {"cases": [serialize_case(db, case) for case in cases], "stats": dashboard_stats(db, cases)}
 
 
 @app.post("/api/cases", status_code=201)
@@ -109,6 +110,7 @@ def apply_repairs(case_id: str, payload: list[RepairApply], db: Session = Depend
             current = current.replace(claim.text, item.replacement_text)
     revision = Revision(case_id=case.id, answer_text=current, revision_reason="Evidence-grounded repair selection")
     db.add(revision)
+    db.flush()
     case.current_answer = current
     add_event(db, case.id, "revision_created", {"revision_id": revision.id, "actions": [item.model_dump() for item in payload]})
     db.commit()

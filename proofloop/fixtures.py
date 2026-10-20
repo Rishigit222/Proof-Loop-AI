@@ -16,9 +16,9 @@ DEMO_SCENARIOS = {
     },
     "contradicted": {
         "title": "Contradicted: external model required",
-        "answer": "ProofLoop AI requires an external generative AI provider to verify claims.",
+        "answer": "External providers are mandatory for verification.",
         "sources": [
-            {"name": "Architecture note", "content": "The core verification engine runs offline without model credentials. External model providers are optional future integrations."},
+            {"name": "Architecture note", "content": "External providers are not mandatory for verification. The core verification engine runs offline without model credentials."},
         ],
     },
 }

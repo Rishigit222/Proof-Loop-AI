@@ -1,49 +1,59 @@
 {% extends "base.html" %}
 {% block title %}Overview · ProofLoop AI{% endblock %}
+{% block topbar_context %}<span class="context-kicker">WORKSPACE</span><span class="context-divider">/</span><span>Overview</span>{% endblock %}
 {% block content %}
-<section class="hero">
-  <div>
-    <p class="eyebrow">EVIDENCE-FIRST RELIABILITY WORKBENCH</p>
-    <h1>Make AI decisions <span>inspectable.</span></h1>
+<section class="hero" aria-labelledby="overview-title">
+  <div class="hero-copy-block">
+    <div class="eyebrow-row"><span class="eyebrow-mark" aria-hidden="true"></span><p class="eyebrow">EVIDENCE-FIRST RELIABILITY WORKBENCH</p></div>
+    <h1 id="overview-title">Make AI decisions <span>inspectable.</span></h1>
     <p class="hero-copy">Trace claims to source text, surface contradictions, repair the answer, and keep a human in the loop.</p>
   </div>
-  <a class="button primary" href="#new-case">+ New verification case</a>
+  <a class="button primary button-with-icon" href="#new-case"><span aria-hidden="true">＋</span> New verification case</a>
 </section>
-<section class="metric-grid">
-  <div class="metric"><span>Active cases</span><strong>{{ cases|length }}</strong><small>Stored locally</small></div>
-  <div class="metric"><span>Verification engine</span><strong>Offline</strong><small>No API key required</small></div>
-  <div class="metric"><span>Truth claims</span><strong>Never</strong><small>Scores are not probabilities</small></div>
-  <div class="metric"><span>Human gate</span><strong>Required</strong><small>Approval is explicit</small></div>
+<section class="metric-grid overview-metrics" id="workspace-metrics" aria-label="Workspace metrics">
+  <div class="metric metric-featured"><span>Total cases</span><strong>{{ stats.total_cases }}</strong><small>{{ stats.verified_cases }} with a completed verification run</small><span class="metric-spark" aria-hidden="true"></span></div>
+  <div class="metric"><span>Claims checked</span><strong>{{ stats.claims_checked }}</strong><small>Across persisted verification runs</small></div>
+  <div class="metric"><span>Evidence issues</span><strong>{{ stats.unsupported_or_contradicted }}</strong><small>Unsupported or contradicted claims</small></div>
+  <div class="metric"><span>Awaiting review</span><strong>{{ stats.cases_awaiting_review }}</strong><small>Cases with a pending human decision</small></div>
 </section>
-<section class="two-column">
-  <div class="panel" id="new-case">
-    <div class="panel-heading"><div><p class="eyebrow">START WITH A SCENARIO</p><h2>Run the proof loop</h2></div></div>
+<section class="two-column dashboard-grid">
+  <div class="panel create-panel" id="new-case" aria-labelledby="new-case-title">
+    <div class="panel-heading panel-heading-spaced">
+      <div><div class="eyebrow-row"><span class="step-count">01</span><p class="eyebrow">START WITH A SCENARIO</p></div><h2 id="new-case-title">Run the proof loop</h2></div>
+      <span class="panel-kicker">CREATE CASE</span>
+    </div>
+    <p class="panel-intro">Bring an answer and its source material together. ProofLoop will extract claims before you review the evidence.</p>
     <div class="scenario-grid">
       {% for key, scenario in scenarios.items() %}
-      <button class="scenario" data-scenario="{{ key }}"><span class="scenario-index">0{{ loop.index }}</span><strong>{{ scenario.title }}</strong><small>{{ scenario.answer }}</small><span class="arrow">↗</span></button>
+      <button class="scenario" data-scenario="{{ key }}" type="button"><span class="scenario-index">0{{ loop.index }}</span><span class="scenario-content"><strong>{{ scenario.title }}</strong><small>{{ scenario.answer }}</small></span><span class="arrow" aria-hidden="true">↗</span></button>
       {% endfor %}
     </div>
-    <form id="case-form" class="case-form">
-      <label>Case title<input name="title" placeholder="e.g. Q3 launch brief" required></label>
-      <label>AI-generated answer<textarea name="answer" rows="5" placeholder="Paste the answer you want to verify…" required></textarea></label>
-      <label>Source name<input name="source_name" value="Primary source" required></label>
-      <label>Source text<textarea name="source_content" rows="5" placeholder="Paste the source material…" required></textarea></label>
-      <button class="button primary" type="submit">Create case and extract claims</button>
-      <p class="form-status" id="form-status"></p>
+    <form id="case-form" class="case-form" aria-label="Create verification case">
+       <div class="form-grid"><label>Case title<input name="title" placeholder="e.g. Q3 launch brief" autocomplete="off" required></label></div>
+       <label>AI-generated answer<span class="label-hint">The text you want to verify</span><textarea name="answer" rows="5" placeholder="Paste the answer you want to verify…" required></textarea></label>
+       <div class="source-inputs" id="source-inputs"><div class="source-input"><div class="form-grid"><label>Source name<input name="source_name" value="Primary source" autocomplete="off" required></label><button class="icon-button remove-source" type="button" aria-label="Remove source" hidden>×</button></div><label>Source text<span class="label-hint">The material the answer should be grounded in</span><textarea name="source_content" rows="5" placeholder="Paste the source material…" required></textarea></div></div>
+       <button class="button secondary add-source" id="add-source" type="button">＋ Add another source</button>
+      <div class="form-footer"><button class="button primary" type="submit">Create case and extract claims <span aria-hidden="true">→</span></button><p class="form-status" id="form-status" role="status" aria-live="polite"></p></div>
+      <p class="form-status error-status" id="form-error" role="alert" aria-live="assertive"></p>
     </form>
   </div>
-  <div>
-    <div class="section-heading"><div><p class="eyebrow">CASE HISTORY</p><h2>Recent work</h2></div></div>
+  <div class="history-column" id="case-history" aria-labelledby="history-title">
+    <div class="section-heading"><div><div class="eyebrow-row"><span class="eyebrow-mark muted-mark" aria-hidden="true"></span><p class="eyebrow">CASE HISTORY</p></div><h2 id="history-title">Recent work</h2></div><span class="quiet-label">{{ cases|length }} total</span></div>
+    <div class="history-tools">
+      <label class="search-control"><span aria-hidden="true">⌕</span><span class="sr-only">Search cases</span><input id="case-search" type="search" placeholder="Search cases…" autocomplete="off"></label>
+      <div class="filter-row" role="group" aria-label="Filter cases"><button class="filter active" data-case-filter="all" type="button">All</button><button class="filter" data-case-filter="pending" type="button">Needs review</button><button class="filter" data-case-filter="verified" type="button">Verified</button></div>
+    </div>
     {% if cases %}
       <div class="case-list">
       {% for case in cases %}
-        <a class="case-row" href="/cases/{{ case.id }}"><div><strong>{{ case.title }}</strong><small>{{ case.claims|length }} claims · {{ case.sources|length }} sources</small></div><div class="case-row-right"><span class="status status-{{ case.status }}">{{ case.status|replace('_',' ') }}</span><span class="chevron">›</span></div></a>
+        <a class="case-row" data-case-title="{{ case.title|lower }}" data-case-status="{{ case.status }}" data-decision="{{ case.decision_status }}" href="/cases/{{ case.id }}"><span class="case-row-icon" aria-hidden="true">↗</span><div class="case-row-main"><strong>{{ case.title }}</strong><small>{{ case.claims|length }} claims <span aria-hidden="true">·</span> {{ case.sources|length }} sources <span aria-hidden="true">·</span> {{ case.decision_status }} decision</small></div><div class="case-row-right"><span class="status status-{{ case.status }}">{{ case.status|replace('_',' ') }}</span><span class="chevron" aria-hidden="true">›</span></div></a>
       {% endfor %}
       </div>
+      <div class="empty empty-filtered" id="empty-filtered" hidden><h3>No matching cases</h3><p>Try a different search or filter.</p></div>
     {% else %}
-      <div class="empty"><span class="empty-icon">⌁</span><h3>No cases yet</h3><p>Choose a demo scenario or create your first verification case.</p></div>
+      <div class="empty empty-history" role="status"><span class="empty-icon" aria-hidden="true">⌁</span><h3>No cases yet</h3><p>Choose a demo scenario or create your first verification case.</p><a href="#new-case" class="text-link">Start a case <span aria-hidden="true">→</span></a></div>
     {% endif %}
-    <div class="principle"><span>✦</span><div><strong>Designed to fail closed</strong><p>Similarity alone never earns a supported status. Ambiguity becomes a review task.</p></div></div>
+    <div class="principle" id="principles"><span class="principle-icon" aria-hidden="true">✦</span><div><strong>Designed to fail closed</strong><p>Similarity alone never earns a supported status. Ambiguity becomes a review task.</p></div></div>
   </div>
 </section>
 {% endblock %}

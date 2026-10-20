@@ -7,11 +7,53 @@
   <link rel="stylesheet" href="/static/app.css">
 </head>
 <body>
-  <header class="topbar">
-    <a class="brand" href="/"><span class="brand-mark">P</span><span>ProofLoop <em>AI</em></span></a>
-    <div class="topbar-meta"><span class="live-dot"></span> Local deterministic engine <span class="version">v0.1</span></div>
-  </header>
-  <main class="shell">{% block content %}{% endblock %}</main>
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+  <div class="app-shell">
+    <aside class="sidebar" id="app-sidebar" aria-label="Application navigation">
+      <div class="sidebar-top">
+        <a class="brand" href="/" aria-label="ProofLoop AI overview">
+          <span class="brand-mark" aria-hidden="true">P</span>
+          <span class="brand-name">ProofLoop <em>AI</em></span>
+        </a>
+        <span class="workspace-label">RELIABILITY WORKSPACE</span>
+      </div>
+      <nav class="primary-nav" aria-label="Primary">
+        <a class="nav-item{% if request.url.path == '/' %} active{% endif %}" href="/"{% if request.url.path == '/' %} aria-current="page"{% endif %}>
+          <span class="nav-icon" aria-hidden="true">⌂</span><span>Overview</span>
+        </a>
+        <a class="nav-item" href="/#new-case">
+          <span class="nav-icon" aria-hidden="true">＋</span><span>New case</span>
+        </a>
+        <span class="nav-section-label">WORKSPACE</span>
+        <a class="nav-item" href="/#case-history">
+          <span class="nav-icon" aria-hidden="true">◷</span><span>Case history</span>
+        </a>
+        <a class="nav-item" href="{% if case is defined %}/cases/{{ case.id }}#evidence-title{% else %}/#new-case{% endif %}">
+          <span class="nav-icon" aria-hidden="true">⌁</span><span>Evidence explorer</span>
+        </a>
+        <a class="nav-item" href="/#workspace-metrics">
+          <span class="nav-icon" aria-hidden="true">▦</span><span>Analytics</span>
+        </a>
+        <a class="nav-item" href="/#principles">
+          <span class="nav-icon" aria-hidden="true">⚙</span><span>Settings & guardrails</span>
+        </a>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="engine-card">
+          <span class="engine-pulse" aria-hidden="true"></span>
+          <div><strong>Local engine</strong><small>External providers not required</small></div>
+        </div>
+        <div class="sidebar-footnote"><span class="version">v0.1</span><span>Offline by design</span></div>
+      </div>
+    </aside>
+    <div class="app-main">
+      <header class="topbar">
+        <div class="topbar-context"><button class="sidebar-toggle" id="sidebar-toggle" type="button" aria-label="Collapse navigation" aria-controls="app-sidebar">☰</button>{% block topbar_context %}<span class="context-kicker">WORKSPACE</span><span class="context-divider">/</span><span>Overview</span>{% endblock %}</div>
+        <div class="topbar-meta"><span class="live-dot" aria-hidden="true"></span><span>Local deterministic engine</span></div>
+      </header>
+      <main class="shell" id="main-content">{% block content %}{% endblock %}</main>
+    </div>
+  </div>
   <script src="/static/app.js"></script>
 </body>
 </html>

@@ -82,6 +82,8 @@ def latest_run(db: Session, case_id: str) -> VerificationRun | None:
 
 def serialize_case(db: Session, case: Case) -> dict:
     run = latest_run(db, case.id)
+    revisions = sorted(case.revisions, key=lambda item: item.created_at, reverse=True)
+    decisions = sorted(case.decisions, key=lambda item: item.created_at, reverse=True)
     return {
         "id": case.id,
         "title": case.title,
@@ -93,6 +95,35 @@ def serialize_case(db: Session, case: Case) -> dict:
         "updated_at": case.updated_at.isoformat(),
         "sources": [{"id": s.id, "name": s.name, "content": s.content, "content_hash": s.content_hash} for s in case.sources],
         "claims": [{"id": c.id, "text": c.text, "start_offset": c.start_offset, "end_offset": c.end_offset, "position": c.position, "is_active": c.is_active} for c in case.claims],
-        "latest_run": {"id": run.id, "created_at": run.created_at.isoformat(), "metrics": json.loads(run.metrics_json), "results": json.loads(run.results_json)} if run else None,
+        "latest_run": {"id": run.id, "created_at": run.created_at.isoformat(), "engine_version": run.engine_version, "metrics": json.loads(run.metrics_json), "results": json.loads(run.results_json)} if run else None,
+        "revisions": [{"id": item.id, "answer_text": item.answer_text, "revision_reason": item.revision_reason, "parent_revision_id": item.parent_revision_id, "created_at": item.created_at.isoformat()} for item in revisions],
+        "decisions": [{"id": item.id, "decision": item.decision, "comment": item.comment, "verification_run_id": item.verification_run_id, "created_at": item.created_at.isoformat()} for item in decisions],
         "history": [{"event_type": e.event_type, "data": json.loads(e.event_data_json), "created_at": e.created_at.isoformat()} for e in sorted(case.events, key=lambda item: item.created_at, reverse=True)],
+    }
+
+
+def dashboard_stats(db: Session, cases: list[Case]) -> dict:
+    """Return aggregates derived from persisted cases and their latest runs."""
+    total_claims = 0
+    unsupported = 0
+    contradicted = 0
+    awaiting_review = 0
+    verified_cases = 0
+    for case in cases:
+        run = latest_run(db, case.id)
+        if not run:
+            continue
+        verified_cases += 1
+        metrics = json.loads(run.metrics_json)
+        total_claims += metrics.get("total_claims", 0)
+        unsupported += metrics.get("unsupported", 0)
+        contradicted += metrics.get("contradicted", 0)
+        if case.decision_status == "pending":
+            awaiting_review += 1
+    return {
+        "total_cases": len(cases),
+        "verified_cases": verified_cases,
+        "claims_checked": total_claims,
+        "unsupported_or_contradicted": unsupported + contradicted,
+        "cases_awaiting_review": awaiting_review,
     }
