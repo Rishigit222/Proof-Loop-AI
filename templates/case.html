@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}{{ case.title }} · ProofLoop AI{% endblock %}
+{% block content %}
+<div class="case-header"><div><a class="back" href="/">← Overview</a><p class="eyebrow">VERIFICATION CASE</p><h1>{{ case.title }}</h1><p class="muted">Case ID <code>{{ case.id }}</code> · Original answer preserved</p></div><div class="case-actions"><button class="button secondary" id="verify-button">Run verification</button><a class="button ghost" href="/api/cases/{{ case.id }}/export">Export audit JSON</a></div></div>
+<div id="case-app" data-case-id="{{ case.id }}">
+  <section class="metric-grid compact" id="metrics"></section>
+  <div class="workspace-grid">
+    <section class="panel answer-panel"><div class="panel-heading"><div><p class="eyebrow">ANSWER REVISIONS</p><h2>Current answer</h2></div><span class="status status-{{ case.status }}">{{ case.status|replace('_',' ') }}</span></div><div class="answer-box" id="current-answer">{{ case.current_answer }}</div><div class="original-box"><span>ORIGINAL ANSWER</span><p>{{ case.original_answer }}</p></div></section>
+    <section class="panel approval-panel"><div class="panel-heading"><div><p class="eyebrow">HUMAN GATE</p><h2>Decision</h2></div><span class="status status-{{ case.decision_status }}">{{ case.decision_status }}</span></div><p class="muted">Automated findings are advisory. Record an explicit decision after reviewing the evidence.</p><textarea id="decision-comment" rows="3" placeholder="Optional review note…"></textarea><div class="decision-buttons"><button class="button approve" data-decision="APPROVED">Approve revision</button><button class="button reject" data-decision="REJECTED">Reject revision</button></div><p id="decision-status" class="form-status"></p></section>
+  </div>
+  <section class="panel inspector"><div class="panel-heading"><div><p class="eyebrow">CLAIM-BY-CLAIM INSPECTOR</p><h2>Evidence findings</h2></div><div class="filter-row"><button class="filter active" data-filter="all">All</button><button class="filter" data-filter="supported">Supported</button><button class="filter" data-filter="contradicted">Contradicted</button><button class="filter" data-filter="unsupported">Unsupported</button><button class="filter" data-filter="needs_review">Review</button></div></div><div id="claims-list"></div></section>
+  <section class="panel history"><div class="panel-heading"><div><p class="eyebrow">AUDIT TRAIL</p><h2>What happened</h2></div></div><div id="history-list"></div></section>
+</div>
+<script>window.INITIAL_CASE = {{ case|tojson }};</script>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Overview · ProofLoop AI{% endblock %}
+{% block content %}
+<section class="hero">
+  <div>
+    <p class="eyebrow">EVIDENCE-FIRST RELIABILITY WORKBENCH</p>
+    <h1>Make AI decisions <span>inspectable.</span></h1>
+    <p class="hero-copy">Trace claims to source text, surface contradictions, repair the answer, and keep a human in the loop.</p>
+  </div>
+  <a class="button primary" href="#new-case">+ New verification case</a>
+</section>
+<section class="metric-grid">
+  <div class="metric"><span>Active cases</span><strong>{{ cases|length }}</strong><small>Stored locally</small></div>
+  <div class="metric"><span>Verification engine</span><strong>Offline</strong><small>No API key required</small></div>
+  <div class="metric"><span>Truth claims</span><strong>Never</strong><small>Scores are not probabilities</small></div>
+  <div class="metric"><span>Human gate</span><strong>Required</strong><small>Approval is explicit</small></div>
+</section>
+<section class="two-column">
+  <div class="panel" id="new-case">
+    <div class="panel-heading"><div><p class="eyebrow">START WITH A SCENARIO</p><h2>Run the proof loop</h2></div></div>
+    <div class="scenario-grid">
+      {% for key, scenario in scenarios.items() %}
+      <button class="scenario" data-scenario="{{ key }}"><span class="scenario-index">0{{ loop.index }}</span><strong>{{ scenario.title }}</strong><small>{{ scenario.answer }}</small><span class="arrow">↗</span></button>
+      {% endfor %}
+    </div>
+    <form id="case-form" class="case-form">
+      <label>Case title<input name="title" placeholder="e.g. Q3 launch brief" required></label>
+      <label>AI-generated answer<textarea name="answer" rows="5" placeholder="Paste the answer you want to verify…" required></textarea></label>
+      <label>Source name<input name="source_name" value="Primary source" required></label>
+      <label>Source text<textarea name="source_content" rows="5" placeholder="Paste the source material…" required></textarea></label>
+      <button class="button primary" type="submit">Create case and extract claims</button>
+      <p class="form-status" id="form-status"></p>
+    </form>
+  </div>
+  <div>
+    <div class="section-heading"><div><p class="eyebrow">CASE HISTORY</p><h2>Recent work</h2></div></div>
+    {% if cases %}
+      <div class="case-list">
+      {% for case in cases %}
+        <a class="case-row" href="/cases/{{ case.id }}"><div><strong>{{ case.title }}</strong><small>{{ case.claims|length }} claims · {{ case.sources|length }} sources</small></div><div class="case-row-right"><span class="status status-{{ case.status }}">{{ case.status|replace('_',' ') }}</span><span class="chevron">›</span></div></a>
+      {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty"><span class="empty-icon">⌁</span><h3>No cases yet</h3><p>Choose a demo scenario or create your first verification case.</p></div>
+    {% endif %}
+    <div class="principle"><span>✦</span><div><strong>Designed to fail closed</strong><p>Similarity alone never earns a supported status. Ambiguity becomes a review task.</p></div></div>
+  </div>
+</section>
+{% endblock %}
